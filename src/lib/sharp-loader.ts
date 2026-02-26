@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
-type SharpFactory = (typeof import("sharp"))["default"];
+type SharpFactory = typeof import("sharp");
 
 let cachedSharpFactory: SharpFactory | null = null;
 
