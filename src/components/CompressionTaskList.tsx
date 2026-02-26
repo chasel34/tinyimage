@@ -58,44 +58,80 @@ function formatTargetFormatLabel(format: CompressionSettingsV1["targetFormat"]):
   }
 }
 
-function buildSubtitle(task: ImageTaskItem, settings: CompressionSettingsV1): string | undefined {
-  const errorMessage = task.writeError ?? task.computeError;
-  if (errorMessage) return errorMessage;
+function truncateMiddle(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  if (maxLength <= 3) return text.slice(0, maxLength);
 
-  if (task.writeStatus === "written" && task.writtenOutputPath) {
-    return `已写入: ${path.basename(task.writtenOutputPath)}`;
+  const keep = maxLength - 3;
+  const left = Math.ceil(keep / 2);
+  const right = Math.floor(keep / 2);
+  return `${text.slice(0, left)}...${text.slice(text.length - right)}`;
+}
+
+function shortenFileNameForUI(fileName: string): string {
+  return truncateMiddle(fileName, 28);
+}
+
+function buildPlanLabel(task: ImageTaskItem, settings: CompressionSettingsV1): string | null {
+  if (task.writeStatus === "written") {
+    return null;
   }
 
   if (task.computed) {
     if (settings.outputMode === "generate-new") {
-      return `生成: ${path.basename(task.computed.plannedOutputPath)}`;
+      return "生成新图";
     }
     if (task.computed.overwriteDeletesSourceAfterWrite) {
-      return `覆盖并转换为 ${formatTargetFormatLabel(task.computed.outputFormat)}: ${path.basename(task.computed.plannedOutputPath)}`;
+      return `覆盖并转${formatTargetFormatLabel(task.computed.outputFormat)}`;
     }
     return "覆盖原图";
   }
 
   if (settings.outputMode === "generate-new") {
-    return settings.formatMode === "convert" ? `待生成 (${formatTargetFormatLabel(settings.targetFormat)})` : "待生成";
+    return settings.formatMode === "convert" ? `生成(${formatTargetFormatLabel(settings.targetFormat)})` : "生成新图";
   }
   if (settings.formatMode === "convert") {
-    return `待覆盖并转换为 ${formatTargetFormatLabel(settings.targetFormat)}`;
+    return `覆盖并转${formatTargetFormatLabel(settings.targetFormat)}`;
   }
-  return "待覆盖原图";
+  return "覆盖原图";
 }
 
-function buildAccessories(task: ImageTaskItem): List.Item.Accessory[] {
+function buildSubtitle(task: ImageTaskItem, settings: CompressionSettingsV1): string | undefined {
+  const errorMessage = task.writeError ?? task.computeError;
+  if (errorMessage) return errorMessage;
+
+  if (task.writeStatus === "written" && task.writtenOutputPath) {
+    return `已写入: ${shortenFileNameForUI(path.basename(task.writtenOutputPath))}`;
+  }
+
+  if (task.computed && settings.outputMode === "generate-new") {
+    return `生成: ${shortenFileNameForUI(path.basename(task.computed.plannedOutputPath))}`;
+  }
+
+  return undefined;
+}
+
+function buildAccessories(task: ImageTaskItem, settings: CompressionSettingsV1): List.Item.Accessory[] {
   const percent = calculatePercentChange(task.sourceSizeBytes, task.lastKnownOutputBytes);
   const statusLabel = getTaskStatusLabel(task);
   const error = task.writeError ?? task.computeError;
+  const planLabel = buildPlanLabel(task, settings);
 
   const accessories: List.Item.Accessory[] = [{ tag: statusLabel }];
+  if (planLabel) {
+    accessories.push({ tag: planLabel });
+  }
   if (task.sourceSizeBytes != null) {
-    accessories.push({ text: `原图 ${formatBytes(task.sourceSizeBytes)}` });
+    accessories.push({
+      text: `原图 ${formatBytes(task.sourceSizeBytes)}`,
+      tooltip: `原图 ${formatBytes(task.sourceSizeBytes)}`,
+    });
   }
   if (task.lastKnownOutputBytes != null) {
-    accessories.push({ text: `结果 ${formatBytes(task.lastKnownOutputBytes)}` });
+    accessories.push({
+      text: `结果 ${formatBytes(task.lastKnownOutputBytes)}`,
+      tooltip: `结果 ${formatBytes(task.lastKnownOutputBytes)}`,
+    });
     accessories.push({
       text: {
         value: formatPercentChange(percent),
@@ -403,10 +439,10 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
           <List.Item
             key={task.id}
             id={task.id}
-            title={task.displayName}
+            title={{ value: shortenFileNameForUI(task.displayName), tooltip: task.displayName }}
             subtitle={buildSubtitle(task, sessionSettings)}
             icon={task.currentSourcePath}
-            accessories={buildAccessories(task)}
+            accessories={buildAccessories(task, sessionSettings)}
             quickLook={{ path: task.currentSourcePath }}
             actions={
               <ActionPanel>
