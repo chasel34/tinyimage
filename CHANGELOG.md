@@ -1,6 +1,6 @@
 # TinyImage Changelog
 
-## [1.0.0] - 2026-02-26
+## [Initial Version] - {PR_MERGE_DATE}
 
 - Added Finder-based batch image compression for selected files on macOS
 - Added support for keeping original format or converting to JPEG / PNG / WebP / AVIF

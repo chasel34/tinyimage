@@ -34,18 +34,18 @@ export default function OpenCompressionSettingsCommand() {
   async function handleSaveDefaults(nextSettings: CompressionSettingsV1): Promise<boolean> {
     await saveDefaultCompressionSettings(nextSettings);
     setSettings(nextSettings);
-    await showToast({ style: Toast.Style.Success, title: "默认设置已保存" });
+    await showToast({ style: Toast.Style.Success, title: "Default settings saved" });
     return true;
   }
 
   if (isLoading || !settings) {
-    return <List isLoading navigationTitle="默认压缩设置" />;
+    return <List isLoading navigationTitle="Default Compression Settings" />;
   }
 
   return (
     <CompressionSettingsForm
-      navigationTitle="默认压缩设置"
-      submitTitle="保存默认设置"
+      navigationTitle="Default Compression Settings"
+      submitTitle="Save Default Settings"
       initialSettings={settings}
       onSubmitSettings={handleSaveDefaults}
     />

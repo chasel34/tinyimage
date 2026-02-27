@@ -43,7 +43,7 @@ export async function writeComputedImageTask(
   settings: CompressionSettingsV1,
 ): Promise<WriteResult> {
   if (!item.computed) {
-    return { ok: false, errorMessage: "该图片尚未完成预计算，无法写入" };
+    return { ok: false, errorMessage: "This image is not precomputed yet and cannot be written" };
   }
 
   try {
@@ -61,7 +61,10 @@ export async function writeComputedImageTask(
       try {
         await unlink(item.currentSourcePath);
       } catch {
-        throw new DeleteSourceAfterWriteError("已写入新文件，但删除原文件失败", outputPath);
+        throw new DeleteSourceAfterWriteError(
+          "New file was written, but deleting the original file failed",
+          outputPath,
+        );
       }
     }
 
@@ -82,7 +85,7 @@ export async function writeComputedImageTask(
 
     return {
       ok: false,
-      errorMessage: mapFsOrSharpErrorToMessage(error, "写入失败（未知原因）"),
+      errorMessage: mapFsOrSharpErrorToMessage(error, "Write failed (unknown error)"),
     };
   }
 }

@@ -26,17 +26,17 @@ export async function precomputeImageTask(
     const sharp = await loadSharp();
 
     if (!item.sourceExtLower) {
-      return { ok: false, errorMessage: "缺少文件扩展名，无法识别图片格式" };
+      return { ok: false, errorMessage: "Missing file extension; cannot identify image format" };
     }
 
     const outputFormat = resolveOutputFormat(item.sourceExtLower, settings);
     if (!outputFormat) {
-      return { ok: false, errorMessage: `不支持的格式: ${item.sourceExtLower}` };
+      return { ok: false, errorMessage: `Unsupported format: ${item.sourceExtLower}` };
     }
 
     const fileStat = await stat(item.currentSourcePath);
     if (!fileStat.isFile()) {
-      return { ok: false, errorMessage: "不是文件，无法压缩" };
+      return { ok: false, errorMessage: "Not a file; cannot compress" };
     }
 
     const sourceSizeBytes = fileStat.size;
@@ -71,7 +71,7 @@ export async function precomputeImageTask(
   } catch (error) {
     return {
       ok: false,
-      errorMessage: mapFsOrSharpErrorToMessage(error, "压缩失败（未知原因）"),
+      errorMessage: mapFsOrSharpErrorToMessage(error, "Compression failed (unknown error)"),
     };
   }
 }

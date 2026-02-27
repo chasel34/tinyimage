@@ -21,7 +21,7 @@ function loadSharpFromVendorAssets(): SharpFactory {
     "package.json",
   );
   if (!existsSync(vendorPackageJsonPath)) {
-    throw new Error("未找到 vendored sharp runtime（assets/vendor-sharp）");
+    throw new Error("Vendored sharp runtime not found (assets/vendor-sharp)");
   }
 
   const vendorRequire = createRequire(vendorPackageJsonPath);
@@ -47,7 +47,7 @@ export async function loadSharp(): Promise<SharpFactory> {
       const vendorMessage = vendorError instanceof Error ? vendorError.message : String(vendorError);
       const localMessage = localError instanceof Error ? localError.message : String(localError);
       throw new Error(
-        `无法加载 sharp 运行时。请执行 npm install（会自动生成 assets/vendor-sharp）。vendor: ${vendorMessage}; local: ${localMessage}`,
+        `Failed to load sharp runtime. Run npm install (it will generate assets/vendor-sharp). vendor: ${vendorMessage}; local: ${localMessage}`,
       );
     }
   }

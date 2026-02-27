@@ -79,21 +79,23 @@ function buildPlanLabel(task: ImageTaskItem, settings: CompressionSettingsV1): s
 
   if (task.computed) {
     if (settings.outputMode === "generate-new") {
-      return "生成新图";
+      return "Generate New";
     }
     if (task.computed.overwriteDeletesSourceAfterWrite) {
-      return `覆盖并转${formatTargetFormatLabel(task.computed.outputFormat)}`;
+      return `Overwrite + ${formatTargetFormatLabel(task.computed.outputFormat)}`;
     }
-    return "覆盖原图";
+    return "Overwrite";
   }
 
   if (settings.outputMode === "generate-new") {
-    return settings.formatMode === "convert" ? `生成(${formatTargetFormatLabel(settings.targetFormat)})` : "生成新图";
+    return settings.formatMode === "convert"
+      ? `Generate (${formatTargetFormatLabel(settings.targetFormat)})`
+      : "Generate New";
   }
   if (settings.formatMode === "convert") {
-    return `覆盖并转${formatTargetFormatLabel(settings.targetFormat)}`;
+    return `Overwrite + ${formatTargetFormatLabel(settings.targetFormat)}`;
   }
-  return "覆盖原图";
+  return "Overwrite";
 }
 
 function buildSubtitle(task: ImageTaskItem, settings: CompressionSettingsV1): string | undefined {
@@ -101,11 +103,11 @@ function buildSubtitle(task: ImageTaskItem, settings: CompressionSettingsV1): st
   if (errorMessage) return errorMessage;
 
   if (task.writeStatus === "written" && task.writtenOutputPath) {
-    return `已写入: ${shortenFileNameForUI(path.basename(task.writtenOutputPath))}`;
+    return `Written: ${shortenFileNameForUI(path.basename(task.writtenOutputPath))}`;
   }
 
   if (task.computed && settings.outputMode === "generate-new") {
-    return `生成: ${shortenFileNameForUI(path.basename(task.computed.plannedOutputPath))}`;
+    return `Output: ${shortenFileNameForUI(path.basename(task.computed.plannedOutputPath))}`;
   }
 
   return undefined;
@@ -123,21 +125,21 @@ function buildAccessories(task: ImageTaskItem, settings: CompressionSettingsV1):
   }
   if (task.sourceSizeBytes != null) {
     accessories.push({
-      text: `原图 ${formatBytes(task.sourceSizeBytes)}`,
-      tooltip: `原图 ${formatBytes(task.sourceSizeBytes)}`,
+      text: `Original ${formatBytes(task.sourceSizeBytes)}`,
+      tooltip: `Original ${formatBytes(task.sourceSizeBytes)}`,
     });
   }
   if (task.lastKnownOutputBytes != null) {
     accessories.push({
-      text: `结果 ${formatBytes(task.lastKnownOutputBytes)}`,
-      tooltip: `结果 ${formatBytes(task.lastKnownOutputBytes)}`,
+      text: `Result ${formatBytes(task.lastKnownOutputBytes)}`,
+      tooltip: `Result ${formatBytes(task.lastKnownOutputBytes)}`,
     });
     accessories.push({
       text: {
         value: formatPercentChange(percent),
         color: percent == null ? undefined : percent >= 0 ? Color.Green : Color.Red,
       },
-      tooltip: "相对原图变化",
+      tooltip: "Change vs original",
     });
   }
   if (error) {
@@ -219,7 +221,7 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
               ...task,
               computeStatus: "computing",
               computeError: null,
-              writeError: task.writeStatus === "writing" ? task.writeError : task.writeError,
+              writeError: null,
             };
           });
 
@@ -235,7 +237,7 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
                 ...task,
                 sourceSizeBytes: task.sourceSizeBytes,
                 computeStatus: "compute-failed",
-                computeError: result.errorMessage || "压缩失败（未知原因）",
+                computeError: result.errorMessage || "Compression failed (unknown error)",
                 computed: null,
                 lastKnownOutputBytes: null,
               };
@@ -267,8 +269,8 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
     if (tasksRef.current.some((task) => task.writeStatus === "writing") || isBatchWriting) {
       await showToast({
         style: Toast.Style.Failure,
-        title: "请等待写入完成",
-        message: "写入进行中时不能修改本次设置",
+        title: "Wait for Writes to Finish",
+        message: "You can't change session settings while writing is in progress",
       });
       return false;
     }
@@ -313,7 +315,7 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
       return {
         ...task,
         writeStatus: "write-failed",
-        writeError: result.errorMessage || "写入失败（未知原因）",
+        writeError: result.errorMessage || "Write failed (unknown error)",
         writtenOutputPath: result.partialOutputPath ?? task.writtenOutputPath,
       };
     });
@@ -323,18 +325,26 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
 
   async function handleSingleWrite(taskId: string): Promise<void> {
     if (isBatchWriting) {
-      await showToast({ style: Toast.Style.Failure, title: "批量写入进行中", message: "请稍后重试" });
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Batch Write in Progress",
+        message: "Try again in a moment",
+      });
       return;
     }
 
     const outcome = await runWriteForItem(taskId);
     if (outcome === "skipped") {
-      await showToast({ style: Toast.Style.Failure, title: "当前项不可写入", message: "请先等待预计算完成" });
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Item Is Not Writable Yet",
+        message: "Wait for precompute to finish first",
+      });
       return;
     }
 
     if (outcome === "success") {
-      await showToast({ style: Toast.Style.Success, title: "写入完成" });
+      await showToast({ style: Toast.Style.Success, title: "Write Complete" });
     }
   }
 
@@ -342,13 +352,17 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
     if (!allPrecomputeFinished) {
       await showToast({
         style: Toast.Style.Failure,
-        title: "请等待预计算完成",
-        message: "全部预计算结束后才能批量写入",
+        title: "Wait for Precompute to Finish",
+        message: "Batch write is available only after all precompute tasks finish",
       });
       return;
     }
     if (isBatchWriting || anyWriting) {
-      await showToast({ style: Toast.Style.Failure, title: "写入进行中", message: "请等待当前写入完成" });
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Write in Progress",
+        message: "Wait for current writes to finish",
+      });
       return;
     }
 
@@ -356,18 +370,19 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
     if (queue.length === 0) {
       await showToast({
         style: Toast.Style.Failure,
-        title: "没有可写入项",
-        message: "预计算失败或已写入的图片不会重复写入",
+        title: "No Writable Items",
+        message: "Items that failed precompute or were already written won't be written again",
       });
       return;
     }
 
     if (settingsRef.current.outputMode === "overwrite-original") {
       const confirmed = await confirmAlert({
-        title: "批量覆盖原图？",
-        message: "该操作不可撤销。将按当前设置写入并覆盖原图（或转换后删除原图）。",
-        primaryAction: { title: "继续" },
-        dismissAction: { title: "取消" },
+        title: "Overwrite Originals in Batch?",
+        message:
+          "This action cannot be undone. It will overwrite original files (or delete originals after conversion).",
+        primaryAction: { title: "Continue" },
+        dismissAction: { title: "Cancel" },
       });
       if (!confirmed) return;
     }
@@ -393,16 +408,16 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
 
     await showToast({
       style: failureCount > 0 ? Toast.Style.Failure : Toast.Style.Success,
-      title: "批量写入完成",
-      message: `成功 ${successCount}，失败 ${failureCount}，跳过 ${skippedCount}`,
+      title: "Batch Write Finished",
+      message: `Succeeded ${successCount}, Failed ${failureCount}, Skipped ${skippedCount}`,
     });
   }
 
   function openSessionSettings(): void {
     push(
       <CompressionSettingsForm
-        navigationTitle="本次压缩设置"
-        submitTitle="应用设置"
+        navigationTitle="Session Compression Settings"
+        submitTitle="Apply Settings"
         initialSettings={sessionSettings}
         popOnSubmit
         onSubmitSettings={handleApplySessionSettings}
@@ -412,12 +427,12 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
 
   const navigationTitle = useMemo(() => {
     if (isBatchWriting) {
-      return `TinyImage · 写入 ${batchWriteProgress.done}/${batchWriteProgress.total}`;
+      return `TinyImage · Writing ${batchWriteProgress.done}/${batchWriteProgress.total}`;
     }
     if (!allPrecomputeFinished || isComputing) {
-      return `TinyImage · 预计算 ${precomputedTerminalCount}/${supportedCount}`;
+      return `TinyImage · Precompute ${precomputedTerminalCount}/${supportedCount}`;
     }
-    return `TinyImage · 已就绪 ${writableCount} 项 · 已完成 ${writeDoneCount}`;
+    return `TinyImage · Ready ${writableCount} · Done ${writeDoneCount}`;
   }, [
     allPrecomputeFinished,
     batchWriteProgress.done,
@@ -446,34 +461,34 @@ export function CompressionTaskList(props: CompressionTaskListProps) {
             quickLook={{ path: task.currentSourcePath }}
             actions={
               <ActionPanel>
-                <ActionPanel.Section title="批量操作">
+                <ActionPanel.Section title="Batch Actions">
                   {allPrecomputeFinished ? (
-                    <Action title={`批量写入全部可写入项 (${writableCount})`} onAction={handleBatchWrite} />
+                    <Action title={`Write All Writable Items (${writableCount})`} onAction={handleBatchWrite} />
                   ) : (
                     <Action
-                      title="批量写入（等待预计算完成）"
+                      title="Batch Write (Waiting for Precompute)"
                       onAction={async () =>
                         showToast({
                           style: Toast.Style.Failure,
-                          title: "请等待预计算完成",
-                          message: "全部预计算结束后才能批量写入",
+                          title: "Wait for Precompute to Finish",
+                          message: "Batch write is available only after all precompute tasks finish",
                         })
                       }
                     />
                   )}
-                  <Action title="修改本次设置" onAction={openSessionSettings} />
+                  <Action title="Edit Session Settings" onAction={openSessionSettings} />
                 </ActionPanel.Section>
 
-                <ActionPanel.Section title="当前图片">
+                <ActionPanel.Section title="Current Image">
                   <Action
-                    title="单项写入"
+                    title="Write This Item"
                     onAction={() => handleSingleWrite(task.id)}
                     shortcut={{ modifiers: ["cmd"], key: "s" }}
                   />
                   <Action.ShowInFinder path={task.currentSourcePath} />
-                  <Action.Open title="打开原图" target={task.currentSourcePath} />
+                  <Action.Open title="Open Original" target={task.currentSourcePath} />
                   {canOpenResult && task.writtenOutputPath ? (
-                    <Action.Open title="打开压缩结果" target={task.writtenOutputPath} />
+                    <Action.Open title="Open Compressed Result" target={task.writtenOutputPath} />
                   ) : null}
                 </ActionPanel.Section>
               </ActionPanel>

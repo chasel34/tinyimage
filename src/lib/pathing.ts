@@ -76,7 +76,7 @@ export async function findAvailablePath(basePath: string, options?: { exclude?: 
     }
   }
 
-  throw new Error("无法生成可用的输出文件名");
+  throw new Error("Unable to generate an available output file name");
 }
 
 export function resolveOutputFormat(

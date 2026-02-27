@@ -4,8 +4,8 @@ import { BuildTasksResult, ImageTaskItem } from "../types";
 import { isSupportedInputExtension, normalizeExtension } from "./pathing";
 
 function buildUnsupportedReason(ext: string | null): string {
-  if (!ext) return "缺少文件扩展名，无法识别图片格式";
-  return `不支持的格式: ${ext}`;
+  if (!ext) return "Missing file extension; cannot identify image format";
+  return `Unsupported format: ${ext}`;
 }
 
 export function buildTasksFromFinderSelection(items: FileSystemItem[]): BuildTasksResult {

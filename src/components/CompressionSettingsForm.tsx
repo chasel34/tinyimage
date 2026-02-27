@@ -47,12 +47,16 @@ export function CompressionSettingsForm(props: CompressionSettingsFormProps) {
     const pngCompressionLevel = Number(values.pngCompressionLevel);
 
     if (!Number.isFinite(quality)) {
-      await showToast({ style: Toast.Style.Failure, title: "质量必须是数字", message: "请输入 1-100" });
+      await showToast({ style: Toast.Style.Failure, title: "Quality must be a number", message: "Enter 1-100" });
       return false;
     }
 
     if (!Number.isFinite(pngCompressionLevel)) {
-      await showToast({ style: Toast.Style.Failure, title: "PNG 压缩级别必须是数字", message: "请输入 0-9" });
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "PNG compression level must be a number",
+        message: "Enter 0-9",
+      });
       return false;
     }
 
@@ -75,8 +79,8 @@ export function CompressionSettingsForm(props: CompressionSettingsFormProps) {
       }
       return true;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "保存设置失败";
-      await showToast({ style: Toast.Style.Failure, title: "保存设置失败", message });
+      const message = error instanceof Error ? error.message : "Failed to save settings";
+      await showToast({ style: Toast.Style.Failure, title: "Failed to Save Settings", message });
       return false;
     } finally {
       setIsSubmitting(false);
@@ -93,23 +97,23 @@ export function CompressionSettingsForm(props: CompressionSettingsFormProps) {
         </ActionPanel>
       }
     >
-      <Form.Dropdown id="outputMode" title="输出方式" defaultValue={initialValues.outputMode}>
-        <Form.Dropdown.Item value="generate-new" title="生成新图" />
-        <Form.Dropdown.Item value="overwrite-original" title="覆盖原图" />
+      <Form.Dropdown id="outputMode" title="Output Mode" defaultValue={initialValues.outputMode}>
+        <Form.Dropdown.Item value="generate-new" title="Generate New Images" />
+        <Form.Dropdown.Item value="overwrite-original" title="Overwrite Originals" />
       </Form.Dropdown>
 
       <Form.Dropdown
         id="formatMode"
-        title="格式模式"
+        title="Format Mode"
         defaultValue={initialValues.formatMode}
         onChange={(newValue) => setFormatMode(newValue as CompressionSettingsV1["formatMode"])}
       >
-        <Form.Dropdown.Item value="keep-original" title="保持原格式压缩" />
-        <Form.Dropdown.Item value="convert" title="统一转换格式" />
+        <Form.Dropdown.Item value="keep-original" title="Keep Original Format" />
+        <Form.Dropdown.Item value="convert" title="Convert to One Format" />
       </Form.Dropdown>
 
       {formatMode === "convert" ? (
-        <Form.Dropdown id="targetFormat" title="目标格式" defaultValue={initialValues.targetFormat}>
+        <Form.Dropdown id="targetFormat" title="Target Format" defaultValue={initialValues.targetFormat}>
           {(["jpeg", "png", "webp", "avif"] as const).map((targetFormat) => (
             <Form.Dropdown.Item
               key={targetFormat}
@@ -120,11 +124,11 @@ export function CompressionSettingsForm(props: CompressionSettingsFormProps) {
         </Form.Dropdown>
       ) : null}
 
-      <Form.TextField id="quality" title="质量 (1-100)" defaultValue={initialValues.quality} placeholder="80" />
+      <Form.TextField id="quality" title="Quality (1-100)" defaultValue={initialValues.quality} placeholder="80" />
 
       <Form.Dropdown
         id="pngCompressionLevel"
-        title="PNG 压缩级别 (0-9)"
+        title="PNG Compression Level (0-9)"
         defaultValue={initialValues.pngCompressionLevel}
       >
         {Array.from({ length: 10 }, (_, value) => String(value)).map((value) => (
@@ -134,8 +138,8 @@ export function CompressionSettingsForm(props: CompressionSettingsFormProps) {
 
       <Form.Checkbox
         id="keepMetadata"
-        title="元数据"
-        label="保留 EXIF / ICC 等元数据"
+        title="Metadata"
+        label="Preserve EXIF / ICC metadata"
         defaultValue={initialValues.keepMetadata}
       />
     </Form>

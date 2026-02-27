@@ -37,35 +37,36 @@ export function mapFsOrSharpErrorToMessage(error: unknown, fallback: string): st
   const message = toErrorMessage(error, fallback);
   const nodeError = error as NodeJS.ErrnoException | undefined;
 
-  if (nodeError?.code === "ENOENT") return "文件不存在或已被移动";
-  if (nodeError?.code === "EACCES" || nodeError?.code === "EPERM") return "无写入权限";
-  if (nodeError?.code === "EISDIR") return "不是文件，无法压缩";
-  if (/Input file contains unsupported image format/i.test(message)) return "图片无法解析或格式不受支持";
-  if (/unsupported image format/i.test(message)) return "图片无法解析或格式不受支持";
-  if (/Input file is missing/i.test(message)) return "文件不存在或已被移动";
-  if (/VipsJpeg|corrupt|Corrupt|bad seek|Premature end/i.test(message)) return "图片无法解析或已损坏";
+  if (nodeError?.code === "ENOENT") return "File does not exist or was moved";
+  if (nodeError?.code === "EACCES" || nodeError?.code === "EPERM") return "No write permission";
+  if (nodeError?.code === "EISDIR") return "Not a file; cannot compress";
+  if (/Input file contains unsupported image format/i.test(message))
+    return "Image cannot be parsed or format is unsupported";
+  if (/unsupported image format/i.test(message)) return "Image cannot be parsed or format is unsupported";
+  if (/Input file is missing/i.test(message)) return "File does not exist or was moved";
+  if (/VipsJpeg|corrupt|Corrupt|bad seek|Premature end/i.test(message)) return "Image cannot be parsed or is corrupted";
 
   return message || fallback;
 }
 
 export function getTaskStatusLabel(item: ImageTaskItem): string {
-  if (item.writeStatus === "writing") return "写入中";
-  if (item.writeStatus === "written") return "已完成";
-  if (item.writeStatus === "write-failed") return "失败";
+  if (item.writeStatus === "writing") return "Writing";
+  if (item.writeStatus === "written") return "Done";
+  if (item.writeStatus === "write-failed") return "Failed";
 
   switch (item.computeStatus) {
     case "unsupported":
-      return "失败";
+      return "Failed";
     case "pending":
-      return "待处理";
+      return "Pending";
     case "computing":
-      return "预计算中";
+      return "Precomputing";
     case "ready":
-      return "可写入";
+      return "Writable";
     case "compute-failed":
-      return "失败";
+      return "Failed";
     default:
-      return "待处理";
+      return "Pending";
   }
 }
 

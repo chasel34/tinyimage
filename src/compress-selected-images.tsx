@@ -31,10 +31,10 @@ export default function CompressSelectedImagesCommand() {
         if (finderItems.length === 0) {
           await showToast({
             style: Toast.Style.Failure,
-            title: "未选择图片",
-            message: "请先在 Finder 中选择图片后再运行命令",
+            title: "No Images Selected",
+            message: "Select images in Finder and run the command again",
           });
-          if (!disposed) setState({ kind: "fatal", message: "请先在 Finder 中选择图片" });
+          if (!disposed) setState({ kind: "fatal", message: "Select images in Finder first" });
           return;
         }
 
@@ -42,10 +42,15 @@ export default function CompressSelectedImagesCommand() {
         if (supportedCount === 0) {
           await showToast({
             style: Toast.Style.Failure,
-            title: "没有可压缩图片",
-            message: "仅支持 jpg/jpeg/png/webp/avif",
+            title: "No Supported Images Found",
+            message: "Supported formats: jpg, jpeg, png, webp, avif",
           });
-          if (!disposed) setState({ kind: "fatal", message: "未找到支持的图片格式（仅支持 jpg/jpeg/png/webp/avif）" });
+          if (!disposed) {
+            setState({
+              kind: "fatal",
+              message: "No supported images found (supports jpg, jpeg, png, webp, avif)",
+            });
+          }
           return;
         }
 
@@ -53,8 +58,8 @@ export default function CompressSelectedImagesCommand() {
           setState({ kind: "ready", tasks, initialSettings: defaultSettings });
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : "读取 Finder 选中项失败";
-        await showToast({ style: Toast.Style.Failure, title: "读取 Finder 选中项失败", message });
+        const message = error instanceof Error ? error.message : "Failed to read Finder selection";
+        await showToast({ style: Toast.Style.Failure, title: "Failed to Read Finder Selection", message });
         if (!disposed) setState({ kind: "fatal", message });
       }
     })();
@@ -66,7 +71,7 @@ export default function CompressSelectedImagesCommand() {
 
   async function handleInitialSettingsSave(nextSettings: CompressionSettingsV1): Promise<boolean> {
     await saveDefaultCompressionSettings(nextSettings);
-    await showToast({ style: Toast.Style.Success, title: "默认设置已保存" });
+    await showToast({ style: Toast.Style.Success, title: "Default settings saved" });
 
     setState((previous) => {
       if (previous.kind !== "ready") return previous;
@@ -86,7 +91,7 @@ export default function CompressSelectedImagesCommand() {
   if (state.kind === "fatal") {
     return (
       <List navigationTitle="TinyImage">
-        <List.EmptyView title="无法开始压缩" description={state.message} />
+        <List.EmptyView title="Unable to Start Compression" description={state.message} />
       </List>
     );
   }
@@ -94,8 +99,8 @@ export default function CompressSelectedImagesCommand() {
   if (state.initialSettings == null) {
     return (
       <CompressionSettingsForm
-        navigationTitle="首次压缩设置"
-        submitTitle="保存并开始压缩"
+        navigationTitle="Initial Compression Settings"
+        submitTitle="Save and Start Compression"
         initialSettings={{
           schemaVersion: 1,
           outputMode: "generate-new",
